@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: broadcastmanager-deployment
+spec:
+  selector:
+    matchLabels:
+      app: broadcastmanager
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: broadcastmanager
+    spec:
+      containers:
+        - name: broadcastmanager
+          image: localhost:5000/gradual-broadcastmanager:7000-stable
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 7000
+          resources:
+            requests:
+              cpu: 100m
+              memory: 100Mi
+            limits:
+              cpu: 200m
+              memory: 200Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: broadcastmanager
+spec:
+  type: ClusterIP
+  ports:
+    - port: 7000
+  selector:
+    app: broadcastmanager

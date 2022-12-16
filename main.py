@@ -8,6 +8,14 @@ app = Flask(__name__)
 CORS(app)
 
 
+@app.route('/alive', methods=["GET", "POST"])
+def get_ui():
+    if request.method == 'GET':
+        return "alive", 200
+    post = request.get_json()
+    print("Body=>", post)
+    return jsonify(post), 200
+
 # get all active nodes from NodeManager
 
 
@@ -97,18 +105,17 @@ def broadcast():
     """
     broadcast_info = request.get_json()
     # unpacking the broadcast info
-    broadcast_src_node_id = broadcast_info["src_node_id"]
-    broadcast_endpoint = broadcast_info["endpoint"]
-    broadcast_payload = broadcast_info.get("payload", None)
-    # NOTE: smart broadcast_payload checking
-    if broadcast_payload == None:
-        # get node information failed
+    try:
+        broadcast_src_node_id = broadcast_info["src_node_id"]
+        broadcast_endpoint = broadcast_info["endpoint"]
+        broadcast_payload = broadcast_info.get("payload", None)
+    except:
         api_return = {
-            "message": "Nodes Broadcast should have a payload ,broadcast failed"
+            "message": "Missing required field"
         }
+        print("")
         return jsonify(api_return), 400
 
-    print(broadcast_src_node_id, broadcast_endpoint, broadcast_payload)
     # get all available nodes
     may_active_nodes = get_activate_node()
     if may_active_nodes == False:
@@ -116,6 +123,8 @@ def broadcast():
         api_return = {
             "message": "Nodes information get failed, NodeManager offline ,broadcast failed"
         }
+        print(
+            "BroadcastManager: Failed to get may_active_nodes information from NodeManager")
         return jsonify(api_return), 500
 
     print(may_active_nodes)
@@ -125,16 +134,19 @@ def broadcast():
         api_return = {
             "message": "Your Node is not  register in this NodeNetwork,broadcast failed"
         }
+        print(
+            f"BroadcastManager: {broadcast_src_node_id} is not registered in NodeManager")
         return jsonify(api_return), 403
 
     # NOTE : we should not broadcast to who send this broadcast
     may_active_nodes.remove(broadcast_src_node_id)
-
+    print(broadcast_src_node_id, may_active_nodes)
     if may_active_nodes == []:
         # get node information failed
         api_return = {
             "message": "No online peer Node ,broadcast failed"
         }
+        print(f"BroadcastManager: No online peer Node,broadcast failed")
         return jsonify(api_return), 200
 
     checked_alive_node = node_alive_check(may_active_nodes)
@@ -143,6 +155,8 @@ def broadcast():
         api_return = {
             "message": "After node alive check  no node is online ,broadcast failed"
         }
+        print(
+            f"BroadcastManager: After node alive check no node is online,broadcast failed")
         return jsonify(api_return), 500
     print("\n--------------BroadCasting------------------")
     broadcast_result = {
@@ -181,7 +195,7 @@ def broadcast():
         "message": "broadcast successfully",
         "broadcast_result": broadcast_result
     }
-
+    print("---------------Success-----------------")
     return jsonify(api_return), 200
 
 
@@ -208,13 +222,12 @@ def register_service(node_manager_url):
     else:
         # if we exit the loop without a break, registration failed
         print("NodeManager is DEAD !!")
-
         return False
 
 
 # NODE_MANAGER address
-
-NODE_MANAGER = "http://localhost:6000"
+# try to refer to the node manager
+NODE_MANAGER = "http://nodemanager.default.svc.cluster.local:8000"
 
 
 if __name__ == '__main__':
