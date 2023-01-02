@@ -9,7 +9,7 @@ CORS(app)
 
 
 @app.route('/alive', methods=["GET", "POST"])
-def get_ui():
+def alive():
     if request.method == 'GET':
         return "alive", 200
     post = request.get_json()
